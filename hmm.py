@@ -60,14 +60,45 @@ class HMM:
         print('O=%f'%P)
         print(betas)
         return betas
-
+    def viterbi(self,Q,V,A,B,O,PI):
+        '''
+       :param Q:状态序列
+                :param V: 观测集合
+                :param A:状态转移矩阵
+                :param B: 生成概率矩阵
+                :param O: 观测序列
+                :param PI: 状态概率向量
+                :return:
+        '''
+        N = len(Q)
+        M = len(O)
+        #deltas是最优路径概率，行：状态，列：时间
+        deltas = np.zeros((N,M))
+        #psis最优路径结点(比deltas晚一期)
+        psis = np.zeros((N,M))
+        #记录最优路径
+        I = np.zeros((1,M))
+        for t in range(M):
+            index_O = V.index(O[t])
+            for i in range(N):
+                if t==0:
+                    deltas[i][t] = PI[0][i]*B[i][index_O]
+                    psis[i][t] = 0
+                else:#遍历j
+                    deltas[i][t] = np.max(np.multiply([delta[t-1] for delta in deltas],[a[i] for a in A]))*B[i][index_O]
+                    psis[i][t] = np.argmax(np.multiply([delta[t-1] for delta in deltas],[a[i] for a in A]))
+        I[0][M-1] = np.argmax([delta[M-1] for delta in deltas])
+        for t in range(M-2,-1,-1):
+            I[0][t] = psis[int(I[0][t+1])][t+1]
+        print(I)
+        return I
 if __name__=='__main__':
     Q = [1,2,3]
     V = ['red','white']
-    A = [[0.5,0.1,0.4],[0.3,0.5,0.2],[0.2,0.2,0.6]]
+    A = [[0.5,0.2,0.3],[0.3,0.5,0.2],[0.2,0.3,0.5]]
     B = [[0.5,0.5],[0.4,0.6],[0.7,0.3]]
-    O = ['red','white','red','red','white','red','white','white']
-    PI = [[0.2,0.3,0.4]]
+    O = ['red','white','red','white']
+    PI = [[0.2,0.4,0.4]]
     Hmm = HMM()
     alphas = Hmm.forward(Q,V,A,B,O,PI)
     betas = Hmm.backward(Q,V,A,B,O,PI)
@@ -77,3 +108,5 @@ if __name__=='__main__':
     print(beta)
     result = alpha[2]*beta[2]/np.dot(alpha,beta)
     print(result)
+    I = Hmm.viterbi(Q,V,A,B,O,PI)
+    print(I)
